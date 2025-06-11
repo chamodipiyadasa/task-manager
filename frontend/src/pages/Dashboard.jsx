@@ -38,10 +38,13 @@ export default function Dashboard() {
           <p><strong>Email:</strong> {user?.email}</p>
         </div>
 
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-2">Your Tasks</h2>
-          <p className="text-sm text-gray-600">We’ll display your task list here soon!</p>
-        </div>
+        <button
+  onClick={() => window.location.href = "/tasks"}
+  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 mt-4 rounded"
+>
+  View Task List
+</button>
+
       </div>
     </div>
   );

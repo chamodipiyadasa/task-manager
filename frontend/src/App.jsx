@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import TaskList from "./pages/TaskList";
+import TaskForm from "./pages/TaskForm";
+
 
 function App() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -16,6 +19,10 @@ function App() {
           path="/dashboard"
           element={user ? <Dashboard /> : <Navigate to="/login" />}
         />
+        <Route path="/tasks" element={user ? <TaskList /> : <Navigate to="/login" />} />
+         <Route path="/tasks/add" element={user ? <TaskForm mode="add" /> : <Navigate to="/login" />} />
+<Route path="/tasks/edit/:id" element={user ? <TaskForm mode="edit" /> : <Navigate to="/login" />} />
+
       </Routes>
     </BrowserRouter>
   );
