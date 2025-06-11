@@ -1,18 +1,24 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const user = JSON.parse(localStorage.getItem("user"));
 
   return (
-    <div className="text-3xl text-blue-500 font-bold p-4">
-      Tailwind is working! 💙
-    </div>
-
-    
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
+        <Route path="/login" element={<Login onLogin={() => window.location.replace("/dashboard")} />} />
+        <Route path="/register" element={<Register />} />
+        <Route
+          path="/dashboard"
+          element={user ? <Dashboard /> : <Navigate to="/login" />}
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
