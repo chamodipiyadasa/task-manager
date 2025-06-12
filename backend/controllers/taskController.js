@@ -69,3 +69,21 @@ exports.deleteTask = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+exports.getTaskStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const allTasks = await Task.find({ createdBy: userId });
+
+    const totalTasks = allTasks.length;
+    const pending = allTasks.filter((t) => t.status === "pending").length;
+    const inProgress = allTasks.filter((t) => t.status === "in-progress").length;
+    const completed = allTasks.filter((t) => t.status === "completed").length;
+
+    res.json({ totalTasks, pending, inProgress, completed });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to get stats" });
+  }
+};
+
