@@ -2,11 +2,7 @@
 
 A full-stack task management app built in 24 hours as part of the internship challenge. Users can create, update, and track tasks by status — with a real-time visual overview via a pie chart.
 
-## 🚀 Live Demo (Optional)
-👉 [Frontend Live Link](https://your-frontend-link.vercel.app)  
-👉 [Backend API Link](https://your-backend-link.onrender.com)
 
----
 
 ## 📂 Project Structure
 
