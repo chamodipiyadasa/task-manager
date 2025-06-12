@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import TaskList from "./pages/TaskList";
 import TaskForm from "./pages/TaskForm";
+import './index.css';  // or wherever your Tailwind CSS file is
 
 
 function App() {

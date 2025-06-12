@@ -26,6 +26,7 @@ export default function TaskList() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to load tasks");
+      console.log("Fetched tasks:", data);
       setTasks(data);
     } catch (err) {
       setError(err.message);
@@ -36,13 +37,10 @@ export default function TaskList() {
     fetchTasks();
   }, [filterStatus, filterUser]);
 
-  const handleEdit = (taskId) => {
-    navigate(`/tasks/edit/${taskId}`);
-  };
+  const handleEdit = (taskId) => navigate(`/tasks/edit/${taskId}`);
 
   const handleDelete = async (taskId) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
-    
     setIsDeleting(true);
     try {
       const token = localStorage.getItem("token");
@@ -50,13 +48,10 @@ export default function TaskList() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || "Failed to delete task");
       }
-      
-      // Refresh the task list after successful deletion
       await fetchTasks();
     } catch (err) {
       setError(err.message);
@@ -67,17 +62,29 @@ export default function TaskList() {
 
   const statusOrder = { pending: 1, "in-progress": 2, completed: 3 };
 
-  const filteredTasks = tasks
-    .filter((task) => {
-      const matchesSearch =
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesUser = filterUser
-        ? task.assignedTo.toLowerCase().includes(filterUser.toLowerCase())
-        : true;
-      const matchesStatus = filterStatus ? task.status === filterStatus : true;
-      return matchesSearch && matchesUser && matchesStatus;
-    })
+  const statusClassMap = {
+    pending: "status-pending",
+    "in-progress": "status-in-progress",
+    completed: "status-completed",
+  };
+
+const filteredTasks = tasks
+  .filter((task) => {
+    const status = (task.status || "").toLowerCase();
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesUser = filterUser
+      ? task.assignedTo.toLowerCase().includes(filterUser.toLowerCase())
+      : true;
+
+    let matchesStatus = true;
+    if (filterStatus) {
+      matchesStatus = status === filterStatus;
+    }
+
+    return matchesSearch && matchesUser && matchesStatus;
+  })
     .sort((a, b) => {
       if (!sortField) return 0;
       if (sortField === "deadline") {
@@ -86,8 +93,8 @@ export default function TaskList() {
           : new Date(b.deadline) - new Date(a.deadline);
       } else if (sortField === "status") {
         return sortOrder === "asc"
-          ? statusOrder[a.status] - statusOrder[b.status]
-          : statusOrder[b.status] - statusOrder[a.status];
+          ? statusOrder[(a.status || "").toLowerCase()] - statusOrder[(b.status || "").toLowerCase()]
+          : statusOrder[(b.status || "").toLowerCase()] - statusOrder[(a.status || "").toLowerCase()];
       } else {
         return sortOrder === "asc"
           ? a[sortField].localeCompare(b[sortField])
@@ -103,150 +110,179 @@ export default function TaskList() {
     doc.setTextColor(100);
 
     const headers = [["Title", "Description", "Deadline", "Assigned To", "Status"]];
-    const data = filteredTasks.map(task => [
+    const data = filteredTasks.map((task) => [
       task.title,
       task.description,
       new Date(task.deadline).toLocaleDateString(),
       task.assignedTo,
-      task.status
+      task.status,
     ]);
 
     autoTable(doc, {
       head: headers,
       body: data,
       startY: 30,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [22, 160, 133] },
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [240, 255, 244] },
     });
 
     doc.save("task-list-report.pdf");
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Task List</h2>
-        <Link
-          to="/tasks/add"
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-        >
-          + Add Task
-        </Link>
-      </div>
+    <div className="page-container">
+      <div className="container max-width">
+        {/* Header */}
+        <div className="header">
+          <h1 className="header-title">Task Management</h1>
+          <Link to="/tasks/add" className="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" className="btn-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Add New Task
+          </Link>
+        </div>
 
-      {error && <p className="text-red-600 mb-4">{error}</p>}
+        {/* Error */}
+        {error && <div className="error-message">{error}</div>}
 
-      <div className="flex flex-wrap gap-4 mb-4">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="border px-2 py-1 rounded"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="in-progress">In Progress</option>
-          <option value="completed">Completed</option>
-        </select>
+        {/* Filters & Controls */}
+        <div className="filters-container">
+          <div className="filters-grid">
+            <div className="filter-item">
+              <label>Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
 
-        <input
-          type="text"
-          placeholder="Filter by user email"
-          value={filterUser}
-          onChange={(e) => setFilterUser(e.target.value)}
-          className="border px-2 py-1 rounded"
-        />
+            <div className="filter-item">
+              <label>Assigned To</label>
+              <input
+                type="text"
+                placeholder="Filter by email"
+                value={filterUser}
+                onChange={(e) => setFilterUser(e.target.value)}
+              />
+            </div>
 
-        <input
-          type="text"
-          placeholder="Search title/description"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border px-2 py-1 rounded flex-grow"
-        />
+            <div className="filter-item">
+              <label>Search</label>
+              <input
+                type="text"
+                placeholder="Search tasks"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-        <select
-          value={sortField}
-          onChange={(e) => setSortField(e.target.value)}
-          className="border px-2 py-1 rounded"
-        >
-          <option value="">Sort By</option>
-          <option value="title">Title</option>
-          <option value="deadline">Deadline</option>
-          <option value="status">Status</option>
-        </select>
+            <div className="filter-item filter-actions">
+              <button onClick={fetchTasks} className="btn btn-filter">
+                Apply Filters
+              </button>
+              <button onClick={generatePDF} className="btn btn-danger">
+                Export PDF
+              </button>
+            </div>
+          </div>
 
-        <select
-          value={sortOrder}
-          onChange={(e) => setSortOrder(e.target.value)}
-          className="border px-2 py-1 rounded"
-        >
-          <option value="asc">Asc</option>
-          <option value="desc">Desc</option>
-        </select>
+          <div className="sorting-controls">
+            <div className="sort-item">
+              <label>Sort By:</label>
+              <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value)}
+              >
+                <option value="">None</option>
+                <option value="title">Title</option>
+                <option value="deadline">Deadline</option>
+                <option value="status">Status</option>
+              </select>
+            </div>
 
-        <button
-          onClick={fetchTasks}
-          className="bg-blue-500 text-white px-3 py-1 rounded"
-        >
-          Apply Filters
-        </button>
+            <div className="sort-item">
+              <label>Order:</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-        <button
-          onClick={generatePDF}
-          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-        >
-          Download PDF
-        </button>
-      </div>
-
-      {filteredTasks.length === 0 ? (
-        <p className="text-gray-600">No tasks found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-300 rounded">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 border">Title</th>
-                <th className="p-2 border">Description</th>
-                <th className="p-2 border">Deadline</th>
-                <th className="p-2 border">Assigned To</th>
-                <th className="p-2 border">Status</th>
-                <th className="p-2 border">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTasks.map((task) => (
-                <tr key={task._id} className="text-center hover:bg-gray-50">
-                  <td className="p-2 border">{task.title}</td>
-                  <td className="p-2 border">{task.description}</td>
-                  <td className="p-2 border">
-                    {new Date(task.deadline).toLocaleDateString()}
-                  </td>
-                  <td className="p-2 border">{task.assignedTo}</td>
-                  <td className="p-2 border">{task.status}</td>
-                  <td className="p-2 border">
-                    <div className="flex justify-center space-x-2">
+        {/* Tasks Table */}
+        {filteredTasks.length === 0 ? (
+          <div className="no-tasks">No tasks found.</div>
+        ) : (
+          <div className="table-wrapper">
+            <table className="tasks-table">
+              <thead>
+                <tr>
+                  {["Title", "Description", "Deadline", "Assigned To", "Status", "Actions"].map(
+                    (header) => (
+                      <th key={header} className="table-header">
+                        {header}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((task) => (
+                  <tr key={task._id} className="table-row">
+                    <td className="table-cell task-title">{task.title}</td>
+                    <td className="table-cell task-description" title={task.description}>
+                      {task.description}
+                    </td>
+                    <td className="table-cell">{new Date(task.deadline).toLocaleDateString()}</td>
+                    <td className="table-cell">{task.assignedTo}</td>
+                    <td className="table-cell">
+                      <span
+                        className={`status-badge ${
+                          statusClassMap[(task.status || "").toLowerCase()] || ""
+                        }`}
+                      >
+                        {task.status}
+                      </span>
+                    </td>
+                    <td className="table-cell actions-cell">
                       <button
                         onClick={() => handleEdit(task._id)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm"
+                        className="btn btn-edit"
+                        title="Edit Task"
                       >
-                        Edit
+                        ✏️
                       </button>
                       <button
                         onClick={() => handleDelete(task._id)}
                         disabled={isDeleting}
-                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm disabled:opacity-50"
+                        className="btn btn-delete"
+                        title="Delete Task"
                       >
-                        {isDeleting ? "Deleting..." : "Delete"}
+                        🗑️
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

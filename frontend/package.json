@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:css": "npx tailwindcss -i ./src/input.css -o ./public/output.css --watch"
   },
   "dependencies": {
     "chart.js": "^4.4.9",
