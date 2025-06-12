@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import {jsPDF }from "jspdf";
-import "jspdf-autotable";
-// Replace the problematic line with this
-import { autoTable } from "jspdf-autotable";
-
+import { Link, useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function TaskList() {
   const [tasks, setTasks] = useState([]);
@@ -14,6 +11,8 @@ export default function TaskList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortField, setSortField] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
 
   const fetchTasks = async () => {
     try {
@@ -36,6 +35,35 @@ export default function TaskList() {
   useEffect(() => {
     fetchTasks();
   }, [filterStatus, filterUser]);
+
+  const handleEdit = (taskId) => {
+    navigate(`/tasks/edit/${taskId}`);
+  };
+
+  const handleDelete = async (taskId) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5001/api/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to delete task");
+      }
+      
+      // Refresh the task list after successful deletion
+      await fetchTasks();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const statusOrder = { pending: 1, "in-progress": 2, completed: 3 };
 
@@ -67,41 +95,32 @@ export default function TaskList() {
       }
     });
 
-  // PDF generation function
- const generatePDF = () => {
-  const doc = new jsPDF();
-  doc.setFontSize(18);
-  doc.text("Task List Report", 14, 22);
-  doc.setFontSize(11);
-  doc.setTextColor(100);
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Task List Report", 14, 22);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
 
-  const tableColumn = ["Title", "Description", "Deadline", "Assigned To", "Status"];
-  const tableRows = [];
-  
-  filteredTasks.forEach(task => {
-    const taskData = [
+    const headers = [["Title", "Description", "Deadline", "Assigned To", "Status"]];
+    const data = filteredTasks.map(task => [
       task.title,
       task.description,
       new Date(task.deadline).toLocaleDateString(),
       task.assignedTo,
-      task.status,
-    ];
-    tableRows.push(taskData);
-  });
+      task.status
+    ]);
 
-  // Use autoTable with the doc instance
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-    startY: 30,
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [22, 160, 133] },
-  });
+    autoTable(doc, {
+      head: headers,
+      body: data,
+      startY: 30,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [22, 160, 133] },
+    });
 
-  doc.save("task-list.pdf");
-  console.log("Generating PDF...");
-};
-
+    doc.save("task-list-report.pdf");
+  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -173,12 +192,11 @@ export default function TaskList() {
         </button>
 
         <button
-  onClick={generatePDF}
-  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
->
-  Download PDF
-</button>
-
+          onClick={generatePDF}
+          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+        >
+          Download PDF
+        </button>
       </div>
 
       {filteredTasks.length === 0 ? (
@@ -193,6 +211,7 @@ export default function TaskList() {
                 <th className="p-2 border">Deadline</th>
                 <th className="p-2 border">Assigned To</th>
                 <th className="p-2 border">Status</th>
+                <th className="p-2 border">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -205,6 +224,23 @@ export default function TaskList() {
                   </td>
                   <td className="p-2 border">{task.assignedTo}</td>
                   <td className="p-2 border">{task.status}</td>
+                  <td className="p-2 border">
+                    <div className="flex justify-center space-x-2">
+                      <button
+                        onClick={() => handleEdit(task._id)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(task._id)}
+                        disabled={isDeleting}
+                        className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-sm disabled:opacity-50"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
