@@ -70,3 +70,16 @@ npm install
 # Add your .env file (see env_files.zip)
 npm run dev
 ```
+## 🖼️ Screenshots
+
+### Dashboard View
+
+![Dashboard](screenshots/dashboard.png)
+
+### Task List
+![TaskList](screenshots/tasklist.png)
+
+### Task Form
+
+![Task Form](screenshots/taskform.png)
+
