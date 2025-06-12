@@ -1,0 +1,7 @@
+2c1a30f - chamodi, 32 minutes ago : styles
+3bea818 - chamodi, 10 hours ago : task list updated
+46ca806 - chamodi, 11 hours ago : pdf report
+68044c6 - chamodi, 13 hours ago : task list , task edit , delete ,showing stats in dashboard
+0f20ee7 - chamodi, 13 hours ago : task form completed dashboard
+d6d0035 - chamodi, 13 hours ago : implementv user registration login , task backend data ,auth handling
+38090d1 - chamodi, 15 hours ago : frontend and backend setup
